@@ -1,0 +1,81 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: ecd-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ecd_payment_db
+      POSTGRES_USER: ecd_user
+      POSTGRES_PASSWORD: ecd_password_change_in_production
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ecd_user -d ecd_payment_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ecd-network
+
+  # Spring Boot Backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ecd-backend
+    restart: unless-stopped
+    environment:
+      # Database Configuration
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/ecd_payment_db
+      SPRING_DATASOURCE_USERNAME: ecd_user
+      SPRING_DATASOURCE_PASSWORD: ecd_password_change_in_production
+
+      # JWT Configuration (CHANGE THIS IN PRODUCTION!)
+      JWT_SECRET: your-super-secret-jwt-key-minimum-256-bits-please-change-this-in-production-environment
+
+      # Standard Bank API (set when you have credentials)
+      STANDARDBANK_CLIENT_ID: your-client-id
+      STANDARDBANK_CLIENT_SECRET: your-client-secret
+
+      # Spring Profile
+      SPRING_PROFILES_ACTIVE: prod
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - ecd-network
+
+  # React Frontend with Nginx
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: ecd-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - ecd-network
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  ecd-network:
+    driver: bridge

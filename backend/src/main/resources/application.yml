@@ -1,0 +1,109 @@
+spring:
+  application:
+    name: ecd-payment-reconciliation
+
+  profiles:
+    active: dev
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/ecd_payment_db
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+
+server:
+  port: 8080
+  error:
+    include-message: always
+
+# Actuator Configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when-authorized
+
+# JWT Configuration
+jwt:
+  secret: ${JWT_SECRET:your-256-bit-secret-key-change-this-in-production-please-make-it-long-enough}
+  expiration: 86400000 # 24 hours in milliseconds
+
+# Standard Bank API Configuration
+standardbank:
+  api:
+    base-url: https://api.standardbank.co.za/business
+    client-id: ${STANDARDBANK_CLIENT_ID:your-client-id}
+    client-secret: ${STANDARDBANK_CLIENT_SECRET:your-client-secret}
+    token-url: https://api.standardbank.co.za/oauth2/token
+    enabled: false # Set to true when credentials are available
+
+# Scheduler Configuration
+scheduler:
+  transaction-sync:
+    cron: "0 0 1 * * ?" # Run daily at 1 AM
+    enabled: true
+
+# Webhook Configuration
+webhook:
+  myupdates:
+    api-key: ${WEBHOOK_API_KEY:change-me-in-production}
+    enabled: true
+
+# Async Task Execution
+spring:
+  task:
+    execution:
+      pool:
+        core-size: 2
+        max-size: 5
+        queue-capacity: 100
+      thread-name-prefix: webhook-async-
+
+---
+# Development Profile
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+  datasource:
+    url: jdbc:h2:mem:ecd_payment_db
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+
+---
+# Production Profile
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false

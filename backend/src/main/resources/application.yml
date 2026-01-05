@@ -20,6 +20,14 @@ spring:
     password: ${DB_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
 
+  task:
+    execution:
+      pool:
+        core-size: 2
+        max-size: 5
+        queue-capacity: 100
+      thread-name-prefix: webhook-async-
+
 server:
   port: 8080
   error:
@@ -60,16 +68,6 @@ webhook:
   myupdates:
     api-key: ${WEBHOOK_API_KEY:change-me-in-production}
     enabled: true
-
-# Async Task Execution
-spring:
-  task:
-    execution:
-      pool:
-        core-size: 2
-        max-size: 5
-        queue-capacity: 100
-      thread-name-prefix: webhook-async-
 
 ---
 # Development Profile

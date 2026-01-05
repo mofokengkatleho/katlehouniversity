@@ -14,7 +14,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/children")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
 public class ChildController {
 
     private final ChildService childService;
